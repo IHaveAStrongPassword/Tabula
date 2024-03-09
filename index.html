@@ -1,0 +1,222 @@
+<head>
+    <style>
+        * {
+            font-family: Consolas;
+        }
+        body {
+            margin: auto;
+            margin-top: 160px;
+            width: 800px;
+        }
+        #main {
+            width: 100%;
+            border:solid 1px black;
+        }
+        #prefix {
+            margin:0px;
+            width: 24px;
+        }
+        #cmd:active {
+            border:hidden;
+        }
+        #cmd {
+            font-size:16px;
+            border:hidden;
+            padding:0px;
+            width:calc(100% - 24px);
+            margin: 0px;
+        }
+        .autoEntry {
+            width: 100%;
+        }
+        .autoEntry:hover, .autoEntry:focus {
+            background-color:lightgray;
+        }
+        .autoEntry:active {
+            background-color:black;
+        }
+        .autoLink {
+            width: 100%;
+        }
+        .autoLink:visited, .autoLink:active, .autoLink {
+            text-decoration:none;
+            color:black;
+        }
+
+        .autoLink:focus{
+            color:white;
+            background-color:black;
+        }
+        .autoInfo {
+            color:dimgray;
+        }
+        .autoName {
+            width:120px;
+            display:inline-block;
+        }
+    </style>
+</head>
+<body>
+    <template id="autoEntry"><div class="autoEntry">
+        
+            <div class="autoName">&gt; <a class="autoLink" href="%LINK%">%NAME%</a></div> <span class="autoInfo">%INFO%</span>
+    </div></template>
+    <div id="main">
+        <span id="prefix">$ </span><input id="cmd" autofocus />
+    </div>
+    <div id="auto">
+
+    </div>
+    <script type="text/javascript">
+
+        const links = {
+            "g": "http://github.com/",
+            "m":"http://mail.google.com/",
+            "ipc/index":"https://ipc-sim.github.io",
+            "ipc/paper":"https://ipc-sim.github.io/file/IPC-paper-fullRes.pdf",
+            "ipc/repo": "https://github.com/ipc-sim/ipc",
+        };
+
+        let userLinks = {};
+        try {
+            userLinks = JSON.parse(localStorage.getItem("links")) || [];
+        } catch (e) {
+
+        }
+        console.log(userLinks);
+        function save() {
+            let s = JSON.stringify(userLinks);
+            console.log(`saving ${s}`);
+            localStorage.setItem("links", s);
+        }
+        window.history.pushState({}, null, "");
+
+        let $ = s => document.getElementById(s);
+        let cmd = $("cmd");
+        let autoc = $("auto");
+        let autoTemplate = $("autoEntry");
+
+        function enter() {
+            let s = cmd.value;
+            console.log(userLinks);
+            let obj = [
+                [links[s] || userLinks[s], function (result) {
+                    window.location.href = result;
+                }],
+                [/^(?<name>[^=\s]+)=0$/.exec(s), function (result) {
+                    delete userLinks[result[1]];
+                    save();
+                }],
+                [/^(?<name>[^=\s]+)=(?<url>.+)$/.exec(s), function (result) {
+                    userLinks[result[1]] = result[2];
+                    save();
+                }],
+                
+            ]
+            for (const [key, val] of obj) {
+                ///(?<b>aaa)/.exec("bbabab").
+                if (key !== undefined && key !== null) {
+                    console.log(`${key}, ${val}`);
+                    val(key);
+                    break;
+                }
+            }
+        }
+        function auto() {
+            if (cmd.value.trim() === "") {
+                cmd.value = "";
+            }
+            let s = cmd.value;
+
+
+
+            autoc.innerHTML = "";
+            function add(s, href = null) {
+                let entry = autoTemplate.content.cloneNode(true).firstChild;
+
+                let re = {
+                    "%NAME%": s,
+                    "%LINK%": (typeof href === 'string' || href instanceof String) ? href : "#",
+                    "%INFO%": (typeof href === 'string') ? href : ""
+                }
+                Object.keys(re).forEach(key => entry.innerHTML = entry.innerHTML.replace(key, re[key]));
+                if (href instanceof Function) {
+                    entry.onclick = href;
+                } else if (typeof href === 'string') {
+                    entry.onclick = () => window.location.href = href;
+                }
+                autoc.appendChild(entry);
+            }
+            function append(s) { cmd.value = `${cmd.value.trim()} ${s}`; }
+            
+            if (/^[^\s]*$/.exec(s) !== null) {
+                Object.entries(links).concat(Object.entries(userLinks)).filter(([name, url]) => name.indexOf(s) !== -1).forEach(([name, url]) => {
+                    add(name, url);
+                });
+            }
+        };
+        cmd.onchange = cmd.onpaste = cmd.oninput = auto;
+        auto();
+        window.onkeydown = function (event) {
+            let active = document.activeElement;
+
+            if (cmd === active) {
+                if (event.code === "Enter") {
+                    enter();
+                    return;
+                }
+            } else if(event.code === "Space") {
+                cmd.focus();
+                event.preventDefault();
+                return;
+            }
+
+
+            let ignore = false && active == cmd && cmd.value !== "";
+            if (ignore) {
+                console.log("ignore arrows");
+                return;
+            }
+
+            let all = [...autoc.querySelectorAll("a")]
+
+            if (event.shiftKey && cmd !== active) {
+                let a = 'A'.charCodeAt(0);
+                let w = event.which;
+                let i = w - a;
+                if (i > -1 && i < 26 && i < all.length) {
+                    console.log(`shortcut ${i} ${all[i]}`);
+                    window.location.href = all[i];
+                    return;
+                }
+            }
+
+
+            if (event.code === "ArrowUp") {
+                if (autoc.contains(active)) {
+                    let index = all.indexOf(active);
+                    if (index === 0) {
+                        cmd.focus();
+                    } else {
+                        all[(all.length + all.indexOf(active) - 1) % all.length].focus();
+                    }
+                } else {
+                    all[all.length-1].focus();
+                }
+            } else if (event.code === "ArrowDown") {
+                let index = all.indexOf(active);
+                if (autoc.contains(active)) {
+                    if (index === all.length - 1) {
+                        cmd.focus();
+                    } else {
+                        all[(index + 1) % all.length].focus();
+                    }
+                } else {
+                    console.log(`focus first ${autoc.firstElementChild.outerHTML}`);
+                    all[0].focus();
+                }
+
+            }
+        };
+    </script>
+</body>
