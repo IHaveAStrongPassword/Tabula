@@ -58,15 +58,12 @@
 </head>
 <body>
     <template id="autoEntry"><div class="autoEntry">
-        
-            <div class="autoName">&gt; <a class="autoLink" href="%LINK%">%NAME%</a></div> <span class="autoInfo">%INFO%</span>
+        <div class="autoName">&gt; <a class="autoLink" href="%LINK%">%NAME%</a></div> <span class="autoInfo">%INFO%</span>
     </div></template>
     <div id="main">
         <span id="prefix">$ </span><input id="cmd" autofocus />
     </div>
-    <div id="auto">
-
-    </div>
+    <div id="auto"></div>
     <script type="text/javascript">
 
         let controller = new AbortController();
@@ -123,10 +120,11 @@
                     let code = m[3];
                     window.location.href = `https://github.com/search?q=repo%3A${user}%2F${repo}%20${code}&type=code`;
                 }],
+
+
                 [autoc.firstElementChild, function (c) { c.onclick(); }]
             ]
             for (const [key, val] of obj) {
-                ///(?<b>aaa)/.exec("bbabab").
                 if (key !== undefined && key !== null) {
                     console.log(`${key}, ${val}`);
                     val(key);
@@ -134,14 +132,13 @@
                 }
             }
         }
+
+
         function auto() {
             if (cmd.value.trim() === "") {
                 cmd.value = "";
             }
             let s = cmd.value;
-
-
-
             autoc.innerHTML = "";
             function add(s, href = null) {
                 let entry = autoTemplate.content.cloneNode(true).firstChild;

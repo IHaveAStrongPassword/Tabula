@@ -1,0 +1,33 @@
+<html>
+
+<head></head>
+<body>
+
+<p id="tooltip">
+</p>
+
+<script type="text/javascript"> {
+    function f() {
+        query = window.location.hash.substring(1);
+        if(query === "" || query === "%s") {
+            let tt = document.getElementById("tooltip");
+            let url = `${window.location.href.replace("#", "")}#%s`;
+            window.location.hash = "#%s";
+            tt.innerHTML = "Please save this URL as a bookmark with keyword <code>gh</code>. Then you can search with <code>gh &lt;user&gt;/&lt;repo&gt; &lt;code&gt;</code>";
+            return;
+        }
+        console.log(`query: ${query}`);
+        let m = /^(?<user>.+)(%2F|\/)(?<repo>.+)(\%20)(?<code>.+)$/.exec(query);
+        if(m !== null) {
+            console.log(query);
+            let user = m[1];
+            let repo = m[3];
+            let code = m[5];
+            window.location.href = `https://github.com/search?q=repo%3A${user}%2F${repo}%20${code}&type=code`;
+        }
+    }
+    f();
+}
+</script>
+</body>
+</html>
