@@ -175,9 +175,12 @@
             if (/https:\/\/.+/.exec(s) !== null) {
                 add("goto", s);
             }
+            /*
+            if(/.+\..+/.exec(s) !== null) {
+                add("goto", `https://${s}`);
+            }
+            */
             if (s !== "") {
-
-
                 add("search", `https://ddg.gg/${s}`);
             }
             
