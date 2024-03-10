@@ -69,6 +69,8 @@
     </div>
     <script type="text/javascript">
 
+        let controller = new AbortController();
+
         const links = {
             "g": "http://github.com/",
             "m":"http://mail.google.com/",
@@ -76,6 +78,10 @@
             "ipc/paper":"https://ipc-sim.github.io/file/IPC-paper-fullRes.pdf",
             "ipc/repo": "https://github.com/ipc-sim/ipc",
         };
+
+        const prefix = [
+            "https://"
+        ];
 
         let userLinks = {};
         try {
@@ -111,14 +117,20 @@
                     userLinks[result[1]] = result[2];
                     save();
                 }],
-                
+                [/^gh (?<user>[^\s\/]+)\/(?<repo>[^\s]+) (?<code>[^s]+)$/.exec(s), function (m) {
+                    let user = m[1];
+                    let repo = m[2];
+                    let code = m[3];
+                    window.location.href = `https://github.com/search?q=repo%3A${user}%2F${repo}%20${code}&type=code`;
+                }],
+                [autoc.firstElementChild, function (c) { c.onclick(); }]
             ]
             for (const [key, val] of obj) {
                 ///(?<b>aaa)/.exec("bbabab").
                 if (key !== undefined && key !== null) {
                     console.log(`${key}, ${val}`);
                     val(key);
-                    break;
+                    return;
                 }
             }
         }
@@ -140,7 +152,7 @@
                     "%INFO%": (typeof href === 'string') ? href : ""
                 }
                 Object.keys(re).forEach(key => entry.innerHTML = entry.innerHTML.replace(key, re[key]));
-                if (href instanceof Function) {
+                if (typeof href === 'function') {
                     entry.onclick = href;
                 } else if (typeof href === 'string') {
                     entry.onclick = () => window.location.href = href;
@@ -150,10 +162,40 @@
             function append(s) { cmd.value = `${cmd.value.trim()} ${s}`; }
             
             if (/^[^\s]*$/.exec(s) !== null) {
+
+                prefix.filter(name => name.length > s.length && name.startsWith(s)).forEach(name => {
+                    add(name, function () {
+                        cmd.value = name;
+                        auto();
+                        cmd.focus();
+                    });
+                });
+
                 Object.entries(links).concat(Object.entries(userLinks)).filter(([name, url]) => name.indexOf(s) !== -1).forEach(([name, url]) => {
                     add(name, url);
                 });
             }
+            if (/https:\/\/.+/.exec(s) !== null) {
+                add("goto", s);
+            }
+            if (s !== "") {
+
+
+                add("search", `https://ddg.gg/${s}`);
+            }
+            
+            /*
+            let m = /ddg (?<query>.+)/.exec(s);
+            if (m !== null) {
+                controller.abort();
+                controller = new AbortController();
+                let query = m[1];
+                fetch(`https://api.duckduckgo.com/?q=${query}&format=json`, { signal: controller.signal })
+                    .then(re => re.json()).then(t => {
+                        console.log(t)
+                    });
+            }
+            */
         };
         cmd.onchange = cmd.onpaste = cmd.oninput = auto;
         auto();
